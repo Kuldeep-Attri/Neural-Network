@@ -1,4 +1,8 @@
 import cPickle
+import numpy as np
+
+
+## Here I am creating the Cifar-10 dataset. 
 
 file1 = "/users/kuldeepsharma/Desktop/cifar-10-batches-py/data_batch_1"
 fo = open(file1, 'rb')
@@ -42,72 +46,68 @@ fo.close()
 X_test = dict1['data']
 Y_test = dict1['labels']
 
-import numpy as np
+X_train = np.concatenate((X1,X2,X3,X4,X5),axis=0) # Creating X_train array (50000*3072)
+Y_train = np.concatenate((Y1,Y2,Y3,Y4,Y5),axis=0) # Creating Y_train array (50000*1)
 
-X_train = np.concatenate((X1,X2,X3,X4,X5),axis=0)
-Y_train = np.concatenate((Y1,Y2,Y3,Y4,Y5),axis=0)
+Y_test = np.asarray(Y_test)
 
-Y_test = np.asarray(Y_test) 
-W = np.random.rand(10,3072)
+## Initialsing Parammeters 
+# '''''''''''''''''''''''''''''''
 
-out_ = np.dot(W,np.transpose(X_train))
+W = 0.01*np.random.rand(3072,10)
+v=0
+n_iter = 1000 # number of iteration
+num_examples = 50000
+l_rate = 1e-7
+reg = 1e-0
 
-l_rate = 1e-14
+#''''''''''''''''''''''''''''''''
+for iter_ in range(n_iter):
+	
+	out_ = np.dot(X_train,W)
 
-# Define loss function and use back propagation..
-iter_ = 200
-for j in range(iter_):
-	loss =0
-	v= 0 
-	out_ = np.dot(W,np.transpose(X_train))
-	count = X_train.shape[0]
-	for i in range(count):
-		A = out_[:,i]
-		A = A.reshape(10,1)
-		B = X_train[i,:]
-		B = B.reshape(1,3072)
-		
-		delta = np.dot(A,B)
-		delta[Y_train[i],:]=0
-		#W = W - l_rate*delta
-		v = 0.95*(v) - (l_rate)*delta
-		W = W +v
-		A[Y_train[i]]=0
-		A = np.square(A)
-		loss += np.sum(A) 
-	print j
-	j = j+1
-	print (loss)
+	## To avoid overflow
+	for i in range(50000):
+		a = np.amax(out_[i,:])
+		out_[i,:] = out_[i,:] -a 
+	
+	# Softmax layer
+	out_ = np.exp(out_)
+	b = np.sum(out_,axis=1,keepdims=True)
+	probs = (out_)/b
+	
 
-a = W[0,:]
-im = a.reshape(32,32,3)
-'''
-from PIL import Image
-max_ = np.amax(im)
-min_ = np.amin(im)
+	probs = probs + 1e-15 
+	corect_logprobs = -np.log(probs[range(num_examples),Y_train])
+	data_loss = np.sum(corect_logprobs)/num_examples
+	reg_loss = 0.5*reg*np.sum(np.transpose(W)*np.transpose(W))
+	loss = data_loss + reg_loss
+	print "iteration %d: loss %f" % (iter_, loss)
+	
+	# Storing derivatives for backpropagation
+	dscores = probs
+	dscores[range(num_examples),Y_train] -= 1
+	dscores /= num_examples
+	
+	# Computing delta i.e. dW/d(param)
+	# Using Momentum + SGD 
+	delta = np.dot(np.transpose(X_train),dscores)
+	delta = delta + reg*W
+	v = 0.9*(v) - (l_rate)*delta
+	W = W +v
 
-diff_ = max_-min_
-print diff_
-temp_ = np.ones(3072)
-temp_ = temp_.reshape(32,32,3)
-temp_ = min_*temp_ 
-im = np.subtract(im,temp_)
-im = im/diff_
-print im
-im = im*255
-im  = im.astype(int)
-print im
+	
+## Computing Accuracy
+scores = np.dot(X_train, W) 
+predicted_class = np.argmax(scores, axis=1)
+print 'Training accuracy: %.2f' % (np.mean(predicted_class == Y_train))
+	
+scores = np.dot(X_test, W) 
+predicted_class = np.argmax(scores, axis=1)
+print 'Test accuracy: %.2f' % (np.mean(predicted_class == Y_test))
 
-im = Image.fromarray(im,'RGB')
-im.save('my.png')
- 
-#out_test = np.dot(W,np.transpose(X_test))
-#for i in range(X.tesy.shape[0]):
+	
 
-out_test = np.dot(W,np.transpose(X_test))
-labels = np.zeros(10000)
-for i in range(x_test.shape[0]):
-'''
 
 	
 
