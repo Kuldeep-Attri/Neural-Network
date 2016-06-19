@@ -53,18 +53,20 @@ Y_test = np.asarray(Y_test)
 
 ## Initialsing Parammeters 
 # '''''''''''''''''''''''''''''''
-
-W = 0.01*np.random.rand(3072,10)
-v=0
-n_iter = 1000 # number of iteration
+W1 = 0.01*np.random.rand(3072,1000)
+W2 = 0.01*np.random.rand(1000,10)
+v1=0
+v2=0
+n_iter = 10 # number of iterationx
 num_examples = 50000
 l_rate = 1e-7
-reg = 1e-0
+reg = 1e-2
 
 #''''''''''''''''''''''''''''''''
 for iter_ in range(n_iter):
-	
-	out_ = np.dot(X_train,W)
+	hidden = np.dot(X_train,W1)
+	hidden = np.maximum(hidden,0)
+	out_ = np.dot(hidden,W2)
 
 	## To avoid overflow
 	for i in range(50000):
@@ -80,29 +82,42 @@ for iter_ in range(n_iter):
 	probs = probs + 1e-15 
 	corect_logprobs = -np.log(probs[range(num_examples),Y_train])
 	data_loss = np.sum(corect_logprobs)/num_examples
-	reg_loss = 0.5*reg*np.sum(np.transpose(W)*np.transpose(W))
-	loss = data_loss + reg_loss
+	reg_loss2 = 0.5*reg*np.sum(np.transpose(W2)*np.transpose(W2))
+	reg_loss1 = 0.5*reg*np.sum(np.transpose(W1)*np.transpose(W1))
+	loss = data_loss + reg_loss1 + reg_loss2
 	print "iteration %d: loss %f" % (iter_, loss)
 	
 	# Storing derivatives for backpropagation
 	dscores = probs
 	dscores[range(num_examples),Y_train] -= 1
 	dscores /= num_examples
-	
 	# Computing delta i.e. dW/d(param)
 	# Using Momentum + SGD 
-	delta = np.dot(np.transpose(X_train),dscores)
-	delta = delta + reg*W
-	v = 0.9*(v) - (l_rate)*delta
-	W = W +v
+	dhidden = np.dot(dscores, W2.T)
+	dhidden[hidden <= 0] = 0
 
-	
+	delta = np.dot(np.transpose(hidden),dscores)
+	dW = np.dot(X_train.T, dhidden)
+	delta = delta + reg*W2
+	dW = dW + reg*W1
+	#v2 = 0.9*(v2) - (l_rate)*delta
+	#W2 = W2 +v2
+	W2 = W2 - l_rate*(delta)
+	#v1 = 0.9*(v1) - (l_rate)*dW
+	#W1 = W1 +v1
+	W1 = W1 - l_rate*(dW)
+
 ## Computing Accuracy
-scores = np.dot(X_train, W) 
+'''
+hidden = np.dot(X_t,W1)
+hidden = np.maximum(hidden,0)
+scores = np.dot(hidden, W2) 
 predicted_class = np.argmax(scores, axis=1)
-print 'Training accuracy: %.2f' % (np.mean(predicted_class == Y_train))
-	
-scores = np.dot(X_test, W) 
+print 'The fucking Training accuracy: %.2f' % (np.mean(predicted_class == Y_train))
+'''
+hidden = np.dot(X_test,W1)
+hidden = np.maximum(hidden,0)
+scores = np.dot(hidden, W2)  
 predicted_class = np.argmax(scores, axis=1)
 print 'Test accuracy: %.2f' % (np.mean(predicted_class == Y_test))
 
