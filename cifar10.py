@@ -69,17 +69,9 @@ for iter_ in range(n_iter):
 	out_ = np.dot(hidden,W2)
 
 	## To avoid overflow
-	for i in range(50000):
-		a = np.amax(out_[i,:])
-		out_[i,:] = out_[i,:] -a 
-	
+	out_ -= np.max(out_)
 	# Softmax layer
-	out_ = np.exp(out_)
-	b = np.sum(out_,axis=1,keepdims=True)
-	probs = (out_)/b
-	
-
-	probs = probs + 1e-15 
+	probs = (np.exp(out_))/b = np.sum(out_,axis=1,keepdims=True)
 	corect_logprobs = -np.log(probs[range(num_examples),Y_train])
 	data_loss = np.sum(corect_logprobs)/num_examples
 	reg_loss2 = 0.5*reg*np.sum(np.transpose(W2)*np.transpose(W2))
