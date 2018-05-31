@@ -14,12 +14,12 @@ def creat_data(num_of_point):
 	data_1 = np.random.rand(num_of_point/2,2)
 	data_1 =  1*data_1 + 5 
 	label_1 = np.ones((num_of_point/2,1))
-	plt.scatter(data_1[:,0], data_1[:,1],color='red')
+	# plt.scatter(data_1[:,0], data_1[:,1],color='red')
 
 	data_2 = np.random.rand(num_of_point/2,2)
 	data_2 = -1*data_2 - 5
 	label_2 = np.zeros((num_of_point/2,1))
-	plt.scatter(data_2[:,0], data_2[:,1],color='blue')
+	# plt.scatter(data_2[:,0], data_2[:,1],color='blue')
 
 	# plt.show()
 	data = np.concatenate((data_1, data_2), axis=0)
@@ -60,29 +60,41 @@ if __name__ == '__main__':
 	
 
 	for i_ in xrange(_iters):
-
 		hiddens = []
 		for j_ in xrange(net.num_layer):
 			if j_== 0:	
 				hiddens.append(np.dot(train_data,weights[j_]))
+				hiddens[-1] = np.maximum(0,hiddens[-1]) # Applying ReLU here ... :)
 			if j_>0 and j_<net.num_layer:
-				hiddens.append(np.dot(hiddens[0],weights[j_]))
+				hiddens.append(np.dot(hiddens[-1],weights[j_]))
+				hiddens[-1] = np.maximum(0,hiddens[-1]) # Applying ReLU here ... :)
 
-		output = np.dot(hiddens[net.num_layer - 1],weights[net.num_layer])
+		output = np.dot(hiddens[-1],weights[net.num_layer])
 		
 
 		#########################################################
 		max_ = np.max(output,axis=1)
 		max_ = max_.reshape(train_data.shape[0],1)
 		output = output - max_
+
 		#########################################################
 		prob = np.exp(output)/(np.sum(np.exp(output),axis=1)).reshape(train_data.shape[0],1)
-		print "hello prob..", prob[0,:]
+		print prob.shape
 
 		loss = np.sum(-np.log(prob[range(train_data.shape[0]),train_label.reshape(1,train_label.shape[0]).astype(int)]))
 		print "loss value is after iter --> ", i_," loss --> ",loss
 
-		## back prop will start from here.. ###
+		## back prop will start from here.. ##
+		d_output = prob
+		d_output[range(train_data.shape[0]),train_label.reshape(1,train_label.shape[0]).astype(int)]
+
+		for i_ in xrange(net.num_layer + 1):
+
+			print 
+
+
+
+
 
 		
 
